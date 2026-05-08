@@ -334,7 +334,7 @@ async function loadAnalytics() {
                 <div class="top-item">
                     <span class="top-rank">#${i+1}</span>
                     <span class="top-name">${r.recipe_name}</span>
-                    <span class="top-badge">⭐ ${r.rating}</span>
+                    <span class="top-badge"><i class="ri-star-fill" style="color: var(--yellow)"></i> ${r.rating}</span>
                 </div>`).join('')
             : '<p style="color:var(--text-muted);font-size:.85rem">No perfect-rated recipes found.</p>';
 
@@ -345,21 +345,44 @@ async function loadAnalytics() {
 
 // ─── Delete ───────────────────────────────────────────────
 async function deleteRecipe(name) {
-    if (!confirm(`Delete "${name}"?`)) return;
-    try {
-        await fetch(`/api/recipes/${encodeURIComponent(name)}`, { method: 'DELETE' });
-        showToast('Recipe deleted!');
-        fetchRecipes();
-    } catch {
-        showToast('Failed to delete!', true);
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `You want to delete "${name}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#dc2626',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            await fetch(`/api/recipes/${encodeURIComponent(name)}`, { method: 'DELETE' });
+            showToast('Recipe deleted successfully!');
+            fetchRecipes();
+        } catch {
+            showToast('Failed to delete recipe!', true);
+        }
     }
 }
 
 // ─── Toast ────────────────────────────────────────────────
 function showToast(msg, isError = false) {
-    const toast = document.getElementById('toast');
-    toast.innerText = msg;
-    toast.classList.toggle('error', isError);
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+    });
+
+    Toast.fire({
+        icon: isError ? 'error' : 'success',
+        title: msg
+    });
 }

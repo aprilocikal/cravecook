@@ -74,7 +74,7 @@ async function handleSearch(query) {
         displayedRecipes = results;
 
         // Update section header
-        document.getElementById('sectionTitle').innerText = `🔍 Search Results`;
+        document.getElementById('sectionTitle').innerHTML = `<i class="ri-search-2-line"></i> Search Results`;
         document.getElementById('sectionSubtitle').innerText = `Showing results for "${query}"`;
 
         // Show badge
@@ -217,7 +217,7 @@ function openDetail(idx) {
     const infos = [];
     if (cuisine) infos.push(['Cuisine', cuisine]);
     if (r['yield']) infos.push(['Yield', r['yield']]);
-    if (r.rating) infos.push(['Rating', `⭐ ${r.rating} / 5.0`]);
+    if (r.rating) infos.push(['Rating', `<i class="ri-star-fill" style="color: var(--yellow)"></i> ${r.rating} / 5.0`]);
     infos.push(['Price', formatPrice(price)]);
 
     document.getElementById('detailInfoGrid').innerHTML = infos.map(([label, val]) => `
@@ -247,6 +247,6 @@ function showLoading(show) {
 }
 
 function resetSectionHeader() {
-    document.getElementById('sectionTitle').innerText = '⭐ Top 50 Best Recipes';
+    document.getElementById('sectionTitle').innerHTML = `<i class="ri-star-fill" style="color: var(--yellow)"></i> Top 50 Best Recipes`;
     document.getElementById('sectionSubtitle').innerText = 'Sorted by highest rating — our most popular picks';
 }
