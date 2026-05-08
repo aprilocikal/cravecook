@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CraveCook Recipe — Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon"><i class="ri-restaurant-2-fill"></i></div>
+            <div class="logo-text">
+                <span class="logo-title">CraveCook</span>
+                <span class="logo-sub">Admin Panel</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-group-label">MAIN MENU</div>
+            <a href="#" class="nav-item active" id="nav-recipes" onclick="showView('recipes')">
+                <i class="ri-book-2-line"></i>
+                <span>Recipes</span>
+                <span class="nav-badge" id="sidebarCount">0</span>
+            </a>
+            <a href="#" class="nav-item" id="nav-analytics" onclick="showView('analytics')">
+                <i class="ri-bar-chart-box-line"></i>
+                <span>Analytics</span>
+            </a>
+
+            <div class="nav-group-label" style="margin-top:2rem">PAGES</div>
+            <a href="/menu.html" class="nav-item" target="_blank">
+                <i class="ri-store-2-line"></i>
+                <span>User Menu</span>
+                <i class="ri-external-link-line" style="margin-left:auto;font-size:0.75rem;opacity:0.5"></i>
+            </a>
+            <div class="nav-group-label" style="margin-top:2rem">DATA SOURCE</div>
+            <a href="https://www.kaggle.com/datasets/thedevastator/better-recipes-for-a-better-life" target="_blank" class="nav-item">
+                <i class="ri-global-line"></i>
+                <span>Kaggle Dataset</span>
+                <i class="ri-external-link-line" style="margin-left:auto;font-size:0.75rem;opacity:0.5"></i>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="db-status">
+                <span class="status-dot"></span>
+                <span>MongoDB Atlas</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content" id="recipesView">
+
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <h1 class="page-title">Recipe Management</h1>
+                <p class="page-subtitle">Manage all your recipes from Kaggle dataset</p>
+            </div>
+            <div class="topbar-right">
+                <div class="search-wrapper">
+                    <i class="ri-search-line"></i>
+                    <input type="text" id="searchInput" placeholder="Search recipes...">
+                </div>
+                <button class="btn-add" onclick="openModal('add')">
+                    <i class="ri-add-line"></i> Add Recipe
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-left">
+                    <p class="stat-label">Total Recipes</p>
+                    <h2 class="stat-value" id="totalCount">0</h2>
+                    <p class="stat-change"><i class="ri-database-2-line"></i> In MongoDB</p>
+                </div>
+                <div class="stat-icon-wrap cyan">
+                    <i class="ri-book-2-line"></i>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-left">
+                    <p class="stat-label">Avg. Rating</p>
+                    <h2 class="stat-value" id="avgRating">—</h2>
+                    <p class="stat-change"><i class="ri-star-line"></i> Stars</p>
+                </div>
+                <div class="stat-icon-wrap yellow">
+                    <i class="ri-star-fill"></i>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-left">
+                    <p class="stat-label">With Images</p>
+                    <h2 class="stat-value" id="withImages">0</h2>
+                    <p class="stat-change"><i class="ri-image-line"></i> Visual Recipes</p>
+                </div>
+                <div class="stat-icon-wrap purple">
+                    <i class="ri-image-2-line"></i>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-left">
+                    <p class="stat-label">Data Source</p>
+                    <h2 class="stat-value" style="font-size:1.25rem">Kaggle</h2>
+                    <p class="stat-change"><i class="ri-global-line"></i> allrecipes.com</p>
+                </div>
+                <div class="stat-icon-wrap green">
+                    <i class="ri-global-line"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Section -->
+        <div class="table-card">
+            <div class="table-header">
+                <div class="table-title">
+                    <h2>All Recipes</h2>
+                    <span class="table-count" id="tableCount">Loading...</span>
+                </div>
+                <div class="table-controls">
+                    <select id="filterRating" onchange="filterAndRender()">
+                        <option value="">All Ratings</option>
+                        <option value="4.5">4.5+</option>
+                        <option value="4.0">4.0+</option>
+                        <option value="3.5">3.5+</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table id="recipesTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Recipe Name</th>
+                            <th>Prep Time</th>
+                            <th>Cook Time</th>
+                            <th>Total Time</th>
+                            <th>Servings</th>
+                            <th>Rating</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="8" class="table-loading">
+                                <div class="spinner"></div>
+                                Loading data from MongoDB...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination -->
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <!-- Analytics Section (hidden by default) -->
+    <div class="main-content" id="analyticsView" style="display:none">
+        <header class="topbar">
+            <div class="topbar-left">
+                <h1 class="page-title">Analytics</h1>
+                <p class="page-subtitle">Insights from the CraveCook Recipe dataset</p>
+            </div>
+        </header>
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-left"><p class="stat-label">Avg Rating</p><h2 class="stat-value" id="aAvg">—</h2><p class="stat-change"><i class="ri-star-fill"></i> Out of 5.0</p></div>
+                <div class="stat-icon-wrap yellow"><i class="ri-star-fill"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-left"><p class="stat-label">Max Rating</p><h2 class="stat-value" id="aMax">—</h2><p class="stat-change"><i class="ri-arrow-up-line"></i> Highest</p></div>
+                <div class="stat-icon-wrap green"><i class="ri-award-line"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-left"><p class="stat-label">Categories</p><h2 class="stat-value" id="aCat">—</h2><p class="stat-change"><i class="ri-list-check"></i> Unique</p></div>
+                <div class="stat-icon-wrap cyan"><i class="ri-layout-grid-line"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-left"><p class="stat-label">Perfect Rated (4.9+)</p><h2 class="stat-value" id="aTop">—</h2><p class="stat-change"><i class="ri-trophy-line"></i> Recipes</p></div>
+                <div class="stat-icon-wrap purple"><i class="ri-trophy-fill"></i></div>
+            </div>
+        </div>
+        <div class="analytics-grid">
+            <div class="chart-card">
+                <div class="chart-header"><h3>Rating Distribution</h3><p>How recipes are spread across rating ranges</p></div>
+                <div class="chart-body" id="ratingChart"></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header"><h3>Top 10 Cuisine Categories</h3><p>Most popular recipe categories in the dataset</p></div>
+                <div class="chart-body" id="cuisineChart"></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header"><h3>Servings Distribution</h3><p>How many portions recipes are designed for</p></div>
+                <div class="chart-body" id="servingsChart"></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header"><h3>🏆 Perfect Rated Recipes</h3><p>Recipes with rating 4.9 and above</p></div>
+                <div class="chart-body" id="topRatedList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="formModal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <div>
+                    <h2 id="modalTitle">Add New Recipe</h2>
+                    <p id="modalSubtitle">Fill in the details below</p>
+                </div>
+                <button class="modal-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
+            </div>
+            <form id="recipeForm">
+                <input type="hidden" id="formMode" value="add">
+                <input type="hidden" id="originalName" value="">
+
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>Recipe Name</label>
+                        <input type="text" id="recipe_name" required placeholder="e.g. Apple Cranberry Crisp">
+                    </div>
+                    <div class="form-group">
+                        <label>Prep Time</label>
+                        <input type="text" id="prep_time" placeholder="e.g. 25 mins">
+                    </div>
+                    <div class="form-group">
+                        <label>Cook Time</label>
+                        <input type="text" id="cook_time" placeholder="e.g. 40 mins">
+                    </div>
+                    <div class="form-group">
+                        <label>Total Time</label>
+                        <input type="text" id="total_time" placeholder="e.g. 1 hrs 5 mins">
+                    </div>
+                    <div class="form-group">
+                        <label>Servings</label>
+                        <input type="text" id="servings" placeholder="e.g. 8">
+                    </div>
+                    <div class="form-group">
+                        <label>Rating (0 – 5)</label>
+                        <input type="number" id="rating" placeholder="e.g. 4.5" min="0" max="5" step="0.1">
+                    </div>
+                    <div class="form-group full">
+                        <label>Image URL (Foto)</label>
+                        <input type="url" id="img_src" placeholder="https://example.com/image.jpg" oninput="previewImg(this.value)">
+                    </div>
+                    <div class="form-group full" id="imgPreviewWrap" style="display:none">
+                        <img id="imgPreview" src="" alt="Preview" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border);">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">
+                        <i class="ri-save-line"></i> Save Recipe
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Mobile Bottom Nav -->
+    <div class="mobile-nav">
+        <a href="#" onclick="showView('recipes')" class="active" id="mob-nav-recipes">
+            <i class="ri-book-2-line"></i>
+            <span>Recipes</span>
+        </a>
+        <a href="#" onclick="showView('analytics')" id="mob-nav-analytics">
+            <i class="ri-bar-chart-box-line"></i>
+            <span>Analytics</span>
+        </a>
+        <a href="/menu.html">
+            <i class="ri-external-link-line"></i>
+            <span>User Menu</span>
+        </a>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

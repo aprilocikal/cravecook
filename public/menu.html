@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CraveCook Recipe — Temukan Resep Terbaik</title>
+    <link rel="stylesheet" href="menu.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-inner">
+            <div class="nav-logo">
+                <i class="ri-restaurant-2-fill"></i>
+                <span>CraveCook Recipe</span>
+            </div>
+            <div class="nav-search-wrap">
+                <i class="ri-search-line"></i>
+                <input type="text" id="searchInput" placeholder="Search any recipe from 1090+ collection...">
+                <button id="clearSearch" class="clear-btn" style="display:none">
+                    <i class="ri-close-circle-fill"></i>
+                </button>
+            </div>
+            <a href="/index.html" class="nav-admin-btn">
+                <i class="ri-settings-3-line"></i> Admin
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero" id="heroSection">
+        <div class="hero-content">
+            <div class="hero-badge"><i class="ri-star-fill"></i> Top Rated Recipes</div>
+            <h1>CraveCook<br><span class="hero-accent">Recipe</span></h1>
+            <p>Discover nutritious, easy-to-make recipes curated from our premium dataset. Search from over 1,090 recipes.</p>
+        </div>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <strong id="heroTotal">1090</strong>
+                <span>Recipes</span>
+            </div>
+            <div class="hero-stat-div"></div>
+            <div class="hero-stat">
+                <strong>4.5</strong>
+                <span>Avg. Rating</span>
+            </div>
+            <div class="hero-stat-div"></div>
+            <div class="hero-stat">
+                <strong>Free</strong>
+                <span>to Browse</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Container -->
+    <main class="container">
+
+        <!-- Section Header -->
+        <div class="section-header" id="sectionHeader">
+            <div>
+                <h2 id="sectionTitle">⭐ Top 50 Best Recipes</h2>
+                <p id="sectionSubtitle">Sorted by highest rating — our most popular picks</p>
+            </div>
+            <div class="filter-group">
+                <select id="sortSelect" onchange="handleSort()">
+                    <option value="rating">Sort: Highest Rated</option>
+                    <option value="time">Sort: Quickest</option>
+                    <option value="name">Sort: A–Z</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-wrap" id="loadingWrap">
+            <div class="loading-spinner"></div>
+            <p>Loading recipes...</p>
+        </div>
+
+        <!-- Search results badge -->
+        <div id="searchBadge" class="search-badge" style="display:none">
+            <i class="ri-search-line"></i>
+            <span id="searchBadgeText"></span>
+            <button onclick="clearSearch()">Clear Search</button>
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="cards-grid" id="cardsGrid"></div>
+
+        <!-- No Results -->
+        <div class="no-results" id="noResults" style="display:none">
+            <i class="ri-emotion-sad-line"></i>
+            <h3>No recipes found</h3>
+            <p>Try a different search term</p>
+            <button onclick="clearSearch()" class="btn-back">Back to Top 50</button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <i class="ri-restaurant-2-fill"></i>
+                    <span>CraveCook Recipe</span>
+                </div>
+                <p>Discover nutritious, delicious, and easy-to-make recipes curated from the best sources around the world.</p>
+                <div class="footer-socials">
+                    <a href="#" aria-label="Instagram"><i class="ri-instagram-line"></i></a>
+                    <a href="#" aria-label="Twitter"><i class="ri-twitter-x-line"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="ri-youtube-line"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-links">
+                <div class="footer-col">
+                    <h4>Explore</h4>
+                    <a href="/menu.html">Top Recipes</a>
+                    <a href="/menu.html">Browse All</a>
+                    <a href="/index.html">Admin Panel</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Data Source</h4>
+                    <a href="https://www.kaggle.com/datasets/thedevastator/better-recipes-for-a-better-life" target="_blank">Kaggle Dataset</a>
+                    <a href="https://www.allrecipes.com" target="_blank">AllRecipes.com</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Tech Stack</h4>
+                    <a href="#">Node.js + Express</a>
+                    <a href="#">MongoDB Atlas</a>
+                    <a href="#">Vanilla HTML/CSS/JS</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>© 2025 <strong>CraveCook Recipe</strong>. Dataset by <a href="https://www.kaggle.com/thedevastator" target="_blank">TheDevastator</a> on Kaggle.</p>
+            <p>Built for academic project — CCIT FTUI Semester 2</p>
+        </div>
+    </footer>
+
+
+    <!-- Recipe Detail Modal -->
+    <div class="detail-overlay" id="detailModal">
+        <div class="detail-box">
+            <button class="detail-close" onclick="closeDetail()"><i class="ri-close-line"></i></button>
+            <div class="detail-img-wrap">
+                <img id="detailImg" src="" alt="Recipe" onerror="this.src='https://via.placeholder.com/600x300/1e293b/4b5563?text=No+Image'">
+                <div class="detail-img-overlay">
+                    <span class="detail-rating" id="detailRating"></span>
+                </div>
+            </div>
+            <div class="detail-body">
+                <h2 id="detailName"></h2>
+                <div class="detail-chips" id="detailChips"></div>
+                <div class="detail-price-row">
+                    <span class="detail-price" id="detailPrice"></span>
+                    <a id="detailUrl" href="#" target="_blank" class="detail-link">
+                        <i class="ri-external-link-line"></i> View Full Recipe
+                    </a>
+                </div>
+                <div class="detail-info-grid" id="detailInfoGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script src="menu.js"></script>
+</body>
+</html>
