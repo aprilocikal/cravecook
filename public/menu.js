@@ -8,7 +8,7 @@ let searchTimer = null;
 // ─── Price generator (deterministic from name) ──────────
 function generatePrice(recipe) {
   // Use character codes for deterministic pseudo-random price
-  const seed = (recipe.recipe_name || "x")
+  const seed = (recipe.recipeName || "x")
     .split("")
     .reduce((a, c) => a + c.charCodeAt(0), 0);
   const tiers = [
@@ -122,15 +122,15 @@ function handleSort() {
   let sorted = [...displayedRecipes];
 
   if (sortBy === "rating") {
-    sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    sorted.sort((a, b) => (b.ratings?.ratingScore || 0) - (a.ratings?.ratingScore || 0));
   } else if (sortBy === "name") {
     sorted.sort((a, b) =>
-      (a.recipe_name || "").localeCompare(b.recipe_name || ""),
+      (a.recipeName || "").localeCompare(b.recipeName || ""),
     );
   } else if (sortBy === "time") {
-    // Sort by total_minutes (already parsed on server)
+    // Sort by totalTime (already parsed on server)
     sorted.sort(
-      (a, b) => (a.total_minutes || 999999) - (b.total_minutes || 999999),
+      (a, b) => (a.times?.totalTime || 999999) - (b.times?.totalTime || 999999),
     );
   }
 
@@ -155,10 +155,10 @@ function renderCards(recipes) {
     .map((r, i) => {
       const price = generatePrice(r);
       const cuisine = getCuisine(r.cuisine_path);
-      const rating = r.rating;
+      const rating = r.ratings?.ratingScore;
       const img =
         r.img_src ||
-        `https://via.placeholder.com/400x225/1f2937/4b5563?text=${encodeURIComponent(r.recipe_name || "Recipe")}`;
+        `https://via.placeholder.com/400x225/1f2937/4b5563?text=${encodeURIComponent(r.recipeName || "Recipe")}`;
 
       const ratingHtml = rating
         ? `<div class="card-rating"><i class="ri-star-fill"></i>${rating}</div>`
@@ -176,9 +176,9 @@ function renderCards(recipes) {
                 ${cuisineHtml}
             </div>
             <div class="card-body">
-                <h3 class="card-title">${r.recipe_name || "Unknown Recipe"}</h3>
+                <h3 class="card-title">${r.recipeName || "Unknown Recipe"}</h3>
                 <div class="card-meta">
-                    ${r.total_time ? `<div class="card-meta-item"><i class="ri-time-line"></i>${r.total_time}</div>` : ""}
+                    ${r.times?.totalTime ? `<div class="card-meta-item"><i class="ri-time-line"></i>${r.times.totalTime} mins</div>` : ""}
                     ${r.servings ? `<div class="card-meta-item"><i class="ri-group-line"></i>${r.servings} servings</div>` : ""}
                 </div>
                 <div class="card-footer">
@@ -208,28 +208,29 @@ function openDetail(idx) {
 
   document.getElementById("detailImg").src = img;
   document.getElementById("detailName").innerText =
-    r.recipe_name || "Unknown Recipe";
+    r.recipeName || "Unknown Recipe";
   document.getElementById("detailPrice").innerText = formatPrice(price);
 
   // Rating
   const rEl = document.getElementById("detailRating");
-  rEl.innerHTML = r.rating
-    ? `<i class="ri-star-fill"></i> ${r.rating}`
+  const score = r.ratings?.ratingScore;
+  rEl.innerHTML = score
+    ? `<i class="ri-star-fill"></i> ${score}`
     : `<i class="ri-star-line"></i> No rating`;
 
   // Chips
   const chips = [];
-  if (r.prep_time)
+  if (r.times?.prepTime)
     chips.push(
-      `<div class="chip"><i class="ri-knife-line"></i> Prep: ${r.prep_time}</div>`,
+      `<div class="chip"><i class="ri-knife-line"></i> Prep: ${r.times.prepTime}m</div>`,
     );
-  if (r.cook_time)
+  if (r.times?.cookTime)
     chips.push(
-      `<div class="chip"><i class="ri-fire-line"></i> Cook: ${r.cook_time}</div>`,
+      `<div class="chip"><i class="ri-fire-line"></i> Cook: ${r.times.cookTime}m</div>`,
     );
-  if (r.total_time)
+  if (r.times?.totalTime)
     chips.push(
-      `<div class="chip"><i class="ri-time-line"></i> Total: ${r.total_time}</div>`,
+      `<div class="chip"><i class="ri-time-line"></i> Total: ${r.times.totalTime}m</div>`,
     );
   if (r.servings)
     chips.push(
@@ -251,10 +252,11 @@ function openDetail(idx) {
   const infos = [];
   if (cuisine) infos.push(["Cuisine", cuisine]);
   if (r["yield"]) infos.push(["Yield", r["yield"]]);
-  if (r.rating)
+  const score2 = r.ratings?.ratingScore;
+  if (score2)
     infos.push([
       "Rating",
-      `<i class="ri-star-fill" style="color: var(--yellow)"></i> ${r.rating} / 5.0`,
+      `<i class="ri-star-fill" style="color: var(--yellow)"></i> ${score2} / 5.0`,
     ]);
   infos.push(["Price", formatPrice(price)]);
 

@@ -22,12 +22,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const ratingInput = document.getElementById("rating").value;
       const data = {
-        recipe_name: document.getElementById("recipe_name").value,
-        prep_time: document.getElementById("prep_time").value,
-        cook_time: document.getElementById("cook_time").value,
-        total_time: document.getElementById("total_time").value,
+        recipeName: document.getElementById("recipe_name").value,
+        prepTime: document.getElementById("prep_time").value,
+        cookTime: document.getElementById("cook_time").value,
+        totalTime: document.getElementById("total_time").value,
         servings: document.getElementById("servings").value,
-        rating: ratingInput !== "" ? parseFloat(ratingInput) : null,
+        ratingScore: ratingInput !== "" ? parseFloat(ratingInput) : null,
         img_src: document.getElementById("img_src").value || null,
         yield: document.getElementById("f_yield").value || null,
         url: document.getElementById("f_url").value || null,
@@ -83,7 +83,7 @@ async function fetchRecipes() {
     const withImg = allRecipes.filter((r) => r.img_src).length;
     document.getElementById("withImages").innerText = withImg;
 
-    const ratings = allRecipes.filter((r) => r.rating).map((r) => r.rating);
+    const ratings = allRecipes.filter((r) => r.ratings?.ratingScore).map((r) => r.ratings.ratingScore);
     const avg = ratings.length
       ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
       : "—";
@@ -105,8 +105,9 @@ function filterAndRender() {
     parseFloat(document.getElementById("filterRating").value) || 0;
 
   filteredRecipes = allRecipes.filter((r) => {
-    const matchName = (r.recipe_name || "").toLowerCase().includes(query);
-    const matchRating = !minRating || (r.rating && r.rating >= minRating);
+    const matchName = (r.recipeName || "").toLowerCase().includes(query);
+    const score = r.ratings?.ratingScore;
+    const matchRating = !minRating || (score && score >= minRating);
     return matchName && matchRating;
   });
 
@@ -132,7 +133,7 @@ function renderTable() {
       const globalIdx = start + idx + 1;
       // Use the global index in filteredRecipes so we can look up the object safely
       const filteredIdx = start + idx;
-      const rating = r.rating;
+      const rating = r.ratings?.ratingScore;
       let ratingBadge = "";
       if (!rating) {
         ratingBadge = `<span class="rating-badge none">N/A</span>`;
@@ -147,10 +148,10 @@ function renderTable() {
       return `
         <tr>
             <td class="td-num">${globalIdx}</td>
-            <td class="td-name">${r.recipe_name || "—"}</td>
-            <td class="td-time">${r.prep_time || "—"}</td>
-            <td class="td-time">${r.cook_time || "—"}</td>
-            <td class="td-time">${r.total_time || "—"}</td>
+            <td class="td-name">${r.recipeName || "—"}</td>
+            <td class="td-time">${r.times?.prepTime || "—"}</td>
+            <td class="td-time">${r.times?.cookTime || "—"}</td>
+            <td class="td-time">${r.times?.totalTime || "—"}</td>
             <td class="td-serving">${r.servings || "—"}</td>
             <td>${ratingBadge}</td>
             <td>
@@ -178,7 +179,7 @@ function renderTable() {
   tbody.querySelectorAll(".btn-icon-sm.delete").forEach((btn) => {
     btn.addEventListener("click", () => {
       const idx = parseInt(btn.dataset.idx);
-      deleteRecipe(filteredRecipes[idx].recipe_name);
+      deleteRecipe(filteredRecipes[idx]);
     });
   });
 }
@@ -270,7 +271,13 @@ function openModal(mode, recipeObj = null) {
     document.getElementById("modalSubtitle").innerText = "Update the recipe details below";
 
     // Standard fields
-    ALL_FIELDS.forEach((id) => (document.getElementById(id).value = recipeObj[id] ?? ""));
+    document.getElementById("recipe_name").value = recipeObj.recipeName ?? "";
+    document.getElementById("prep_time").value = recipeObj.times?.prepTime ?? "";
+    document.getElementById("cook_time").value = recipeObj.times?.cookTime ?? "";
+    document.getElementById("total_time").value = recipeObj.times?.totalTime ?? "";
+    document.getElementById("servings").value = recipeObj.servings ?? "";
+    document.getElementById("rating").value = recipeObj.ratings?.ratingScore ?? "";
+    document.getElementById("img_src").value = recipeObj.img_src ?? "";
 
     // Textarea fields (ingredients: join with comma, directions: join with newline)
     const ing = Array.isArray(recipeObj.ingredients)
@@ -287,7 +294,7 @@ function openModal(mode, recipeObj = null) {
       document.getElementById(elemId).value = recipeObj[dataKey] ?? "";
     });
 
-    document.getElementById("originalName").value = recipeObj._id || recipeObj.recipe_name;
+    document.getElementById("originalName").value = recipeObj._id;
     document.getElementById("recipe_name").readOnly = false;
     previewImg(recipeObj.img_src || "");
   }
@@ -425,8 +432,8 @@ async function loadAnalytics() {
             (r, i) => `
                 <div class="top-item">
                     <span class="top-rank">#${i + 1}</span>
-                    <span class="top-name">${r.recipe_name}</span>
-                    <span class="top-badge"><i class="ri-star-fill" style="color: var(--yellow)"></i> ${r.rating}</span>
+                    <span class="top-name">${r.recipeName}</span>
+                    <span class="top-badge"><i class="ri-star-fill" style="color: var(--yellow)"></i> ${r.ratingScore}</span>
                 </div>`,
           )
           .join("")
@@ -437,10 +444,10 @@ async function loadAnalytics() {
 }
 
 // ─── Delete ───────────────────────────────────────────────
-async function deleteRecipe(name) {
+async function deleteRecipe(recipe) {
   const result = await Swal.fire({
     title: "Are you sure?",
-    text: `You want to delete "${name}"?`,
+    text: `You want to delete "${recipe.recipeName}"?`,
     icon: "warning",
     showCancelButton: true,
     confirmButtonColor: "#2563eb",
@@ -451,7 +458,7 @@ async function deleteRecipe(name) {
 
   if (result.isConfirmed) {
     try {
-      await fetch(`/api/recipes/${encodeURIComponent(name)}`, {
+      await fetch(`/api/recipes/${encodeURIComponent(recipe._id)}`, {
         method: "DELETE",
       });
       showToast("Recipe deleted successfully!");
