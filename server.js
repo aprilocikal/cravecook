@@ -68,6 +68,39 @@ app.get("/api/recipes/search", async (req, res) => {
   }
 });
 
+// Get single recipe by _id (for full details including ingredients & directions)
+app.get("/api/recipes/id/:id", async (req, res) => {
+  try {
+    const { ObjectId } = require("mongodb");
+    const { id } = req.params;
+    const col = db.getCollection("recipes");
+    const recipe = await col.findOne({ _id: new ObjectId(id) });
+    if (!recipe) return res.status(404).json({ error: "Recipe not found" });
+    res.json(recipe);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update recipe by _id (full edit — all fields)
+app.put("/api/recipes/id/:id", async (req, res) => {
+  try {
+    const { ObjectId } = require("mongodb");
+    const { id } = req.params;
+    const col = db.getCollection("recipes");
+    const { _id, ...updateData } = req.body; // strip _id from body if present
+    const result = await col.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+    if (result.matchedCount === 0)
+      return res.status(404).json({ error: "Recipe not found" });
+    res.json({ message: "Recipe updated successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Analytics endpoint
 app.get("/api/analytics", async (req, res) => {
   try {

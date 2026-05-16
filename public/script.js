@@ -28,6 +28,11 @@ document.addEventListener("DOMContentLoaded", () => {
         servings: document.getElementById("servings").value,
         rating: parseFloat(document.getElementById("rating").value) || null,
         img_src: document.getElementById("img_src").value || null,
+        yield: document.getElementById("f_yield").value || null,
+        url: document.getElementById("f_url").value || null,
+        cuisine_path: document.getElementById("cuisine_path").value || null,
+        ingredients: document.getElementById("ingredients").value || null,
+        directions: document.getElementById("directions").value || null,
       };
 
       try {
@@ -39,7 +44,8 @@ document.addEventListener("DOMContentLoaded", () => {
           });
           showToast("Recipe added successfully!");
         } else {
-          await fetch(`/api/recipes/${encodeURIComponent(originalName)}`, {
+          const id = document.getElementById("originalName").value;
+          await fetch(`/api/recipes/id/${encodeURIComponent(id)}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data),
@@ -225,45 +231,64 @@ function goPage(page) {
 }
 
 // ─── Modal ────────────────────────────────────────────────
+const ALL_FIELDS = [
+  "recipe_name", "prep_time", "cook_time", "total_time",
+  "servings", "rating", "img_src",
+];
+const TEXTAREA_FIELDS = ["ingredients", "directions"];
+const TEXT_FIELDS_MAP = {
+  f_yield: "yield",
+  f_url: "url",
+  cuisine_path: "cuisine_path",
+};
+
 function openModal(mode, recipeObj = null) {
   const modal = document.getElementById("formModal");
-  const inputs = [
-    "recipe_name",
-    "prep_time",
-    "cook_time",
-    "total_time",
-    "servings",
-    "rating",
-    "img_src",
-  ];
-
   document.getElementById("formMode").value = mode;
 
   if (mode === "add") {
     document.getElementById("modalTitle").innerText = "Add New Recipe";
-    document.getElementById("modalSubtitle").innerText =
-      "Fill in the recipe details below";
-    inputs.forEach((id) => (document.getElementById(id).value = ""));
+    document.getElementById("modalSubtitle").innerText = "Fill in the recipe details below";
+    ALL_FIELDS.forEach((id) => (document.getElementById(id).value = ""));
+    TEXTAREA_FIELDS.forEach((id) => (document.getElementById(id).value = ""));
+    Object.keys(TEXT_FIELDS_MAP).forEach((id) => (document.getElementById(id).value = ""));
     document.getElementById("recipe_name").readOnly = false;
     document.getElementById("originalName").value = "";
     previewImg("");
   } else {
     document.getElementById("modalTitle").innerText = "Edit Recipe";
-    document.getElementById("modalSubtitle").innerText =
-      "Update the recipe details below";
-    inputs.forEach(
-      (id) => (document.getElementById(id).value = recipeObj[id] || ""),
-    );
-    document.getElementById("originalName").value = recipeObj.recipe_name;
-    document.getElementById("recipe_name").readOnly = true;
+    document.getElementById("modalSubtitle").innerText = "Update the recipe details below";
+
+    // Standard fields
+    ALL_FIELDS.forEach((id) => (document.getElementById(id).value = recipeObj[id] ?? ""));
+
+    // Textarea fields (ingredients: join with comma, directions: join with newline)
+    const ing = Array.isArray(recipeObj.ingredients)
+      ? recipeObj.ingredients.join(", ")
+      : (recipeObj.ingredients || "");
+    const dir = Array.isArray(recipeObj.directions)
+      ? recipeObj.directions.join("\n")
+      : (recipeObj.directions || "");
+    document.getElementById("ingredients").value = ing;
+    document.getElementById("directions").value = dir;
+
+    // Mapped text fields
+    Object.entries(TEXT_FIELDS_MAP).forEach(([elemId, dataKey]) => {
+      document.getElementById(elemId).value = recipeObj[dataKey] ?? "";
+    });
+
+    document.getElementById("originalName").value = recipeObj._id || recipeObj.recipe_name;
+    document.getElementById("recipe_name").readOnly = false;
     previewImg(recipeObj.img_src || "");
   }
 
   modal.classList.add("active");
+  document.body.classList.add("modal-open");
 }
 
 function closeModal() {
   document.getElementById("formModal").classList.remove("active");
+  document.body.classList.remove("modal-open");
 }
 
 // ─── Image Preview ─────────────────────────────────────────

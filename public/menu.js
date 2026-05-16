@@ -268,8 +268,115 @@ function openDetail(idx) {
     )
     .join("");
 
+  // Reset ingredients & directions
+  document.getElementById("ingredientsSection").style.display = "none";
+  document.getElementById("directionsSection").style.display = "none";
+  document.getElementById("detailExtraLoading").style.display = "flex";
+
+  // Open modal
   document.getElementById("detailModal").classList.add("active");
   document.body.style.overflow = "hidden";
+
+  // Fetch full recipe detail (includes ingredients & directions)
+  if (r._id) {
+    fetch(`/api/recipes/id/${r._id}`)
+      .then((res) => res.json())
+      .then((full) => {
+        renderIngredients(full.ingredients);
+        renderDirections(full.directions);
+      })
+      .catch(() => {
+        // Try to use what we already have in the card data
+        renderIngredients(r.ingredients);
+        renderDirections(r.directions);
+      })
+      .finally(() => {
+        document.getElementById("detailExtraLoading").style.display = "none";
+      });
+  } else {
+    // No _id — use existing card data
+    renderIngredients(r.ingredients);
+    renderDirections(r.directions);
+    document.getElementById("detailExtraLoading").style.display = "none";
+  }
+}
+
+// ─── Parse ingredients (comma-separated string) ──────────
+function parseIngredients(field) {
+  if (!field) return [];
+  if (Array.isArray(field)) return field.filter(Boolean);
+  if (typeof field === "string") {
+    try {
+      const parsed = JSON.parse(field);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch (_) {}
+    // Ingredients in CSV are comma-separated
+    return field
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+// ─── Parse directions (newline-separated string) ──────────
+function parseDirections(field) {
+  if (!field) return [];
+  if (Array.isArray(field)) return field.filter(Boolean);
+  if (typeof field === "string") {
+    try {
+      const parsed = JSON.parse(field);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch (_) {}
+    // Directions in CSV are newline-separated
+    return field
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+// ─── Render Ingredients ───────────────────────────────────
+function renderIngredients(raw) {
+  const items = parseIngredients(raw);
+  const section = document.getElementById("ingredientsSection");
+  const list = document.getElementById("ingredientsList");
+  const count = document.getElementById("ingredientsCount");
+
+  if (!items.length) {
+    section.style.display = "none";
+    return;
+  }
+
+  count.innerText = `${items.length} items`;
+  list.innerHTML = items
+    .map(
+      (item) =>
+        `<li><i class="ri-checkbox-circle-line"></i><span>${item}</span></li>`,
+    )
+    .join("");
+  section.style.display = "block";
+}
+
+// ─── Render Directions ────────────────────────────────────
+function renderDirections(raw) {
+  const steps = parseDirections(raw);
+  const section = document.getElementById("directionsSection");
+  const list = document.getElementById("directionsList");
+
+  if (!steps.length) {
+    section.style.display = "none";
+    return;
+  }
+
+  list.innerHTML = steps
+    .map(
+      (step) =>
+        `<li><div class="direction-step"><span>${step}</span></div></li>`,
+    )
+    .join("");
+  section.style.display = "block";
 }
 
 function closeDetail() {

@@ -162,6 +162,31 @@
                     </a>
                 </div>
                 <div class="detail-info-grid" id="detailInfoGrid"></div>
+
+                <!-- Ingredients & Directions loading -->
+                <div class="detail-extra-loading" id="detailExtraLoading">
+                    <div class="loading-spinner" style="width:24px;height:24px;border-width:2px;"></div>
+                    <span>Loading ingredients & directions...</span>
+                </div>
+
+                <!-- Ingredients -->
+                <div class="detail-section" id="ingredientsSection" style="display:none">
+                    <div class="detail-section-header">
+                        <i class="ri-list-check-2"></i>
+                        <h3>Ingredients</h3>
+                        <span class="detail-section-count" id="ingredientsCount"></span>
+                    </div>
+                    <ul class="ingredients-list" id="ingredientsList"></ul>
+                </div>
+
+                <!-- Directions -->
+                <div class="detail-section" id="directionsSection" style="display:none">
+                    <div class="detail-section-header">
+                        <i class="ri-guide-line"></i>
+                        <h3>Directions</h3>
+                    </div>
+                    <ol class="directions-list" id="directionsList"></ol>
+                </div>
             </div>
         </div>
     </div>
