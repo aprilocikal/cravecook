@@ -39,12 +39,12 @@ app.get('/api/recipes', async (req, res) => {
   }
 });
 
-// Get top 50 recipes for user menu (sorted by rating desc)
+// Get top 50 recipes for user menu
 app.get('/api/recipes/top50', async (req, res) => {
   try {
     const col = db.getCollection('recipes');
     const recipes = await col.find({ img_src: { $ne: null, $exists: true } })
-      .sort({ rating: -1 })
+      .sort({ total_minutes: 1 })
       .limit(50)
       .toArray();
     res.json(recipes);
@@ -60,8 +60,44 @@ app.get('/api/recipes/search', async (req, res) => {
     const col = db.getCollection('recipes');
     const recipes = await col.find({
       recipe_name: { $regex: q, $options: 'i' }
-    }).limit(50).toArray();
+    }).sort({ total_minutes: 1 }).limit(50).toArray();
     res.json(recipes);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get single recipe by _id
+app.get("/api/recipes/id/:id", async (req, res) => {
+  try {
+    const { ObjectId } = require("mongodb");
+    const { id } = req.params;
+    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "Invalid ID format" });
+    const col = db.getCollection("recipes");
+    const recipe = await col.findOne({ _id: new ObjectId(id) });
+    if (!recipe) return res.status(404).json({ error: "Recipe not found" });
+    res.json(recipe);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update recipe by _id (fixed logic)
+app.put("/api/recipes/id/:id", async (req, res) => {
+  try {
+    const { ObjectId } = require("mongodb");
+    const { id } = req.params;
+    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "Invalid ID format" });
+    
+    const col = db.getCollection("recipes");
+    const { _id, ...updateData } = req.body;
+    const result = await col.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+    if (result.matchedCount === 0)
+      return res.status(404).json({ error: "Recipe not found" });
+    res.json({ message: "Recipe updated successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

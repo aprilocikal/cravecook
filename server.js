@@ -87,16 +87,28 @@ app.put("/api/recipes/id/:id", async (req, res) => {
   try {
     const { ObjectId } = require("mongodb");
     const { id } = req.params;
+    
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid Recipe ID format" });
+    }
+
     const col = db.getCollection("recipes");
     const { _id, ...updateData } = req.body; // strip _id from body if present
+    
+    // Log for debugging
+    console.log(`Updating recipe ${id} with:`, Object.keys(updateData));
+
     const result = await col.updateOne(
       { _id: new ObjectId(id) },
       { $set: updateData }
     );
+
     if (result.matchedCount === 0)
-      return res.status(404).json({ error: "Recipe not found" });
-    res.json({ message: "Recipe updated successfully" });
+      return res.status(404).json({ error: "Recipe not found in database" });
+    
+    res.json({ message: "Recipe updated successfully", modifiedCount: result.modifiedCount });
   } catch (error) {
+    console.error("Update error:", error);
     res.status(500).json({ error: error.message });
   }
 });

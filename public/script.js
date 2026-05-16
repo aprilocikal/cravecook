@@ -20,13 +20,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const mode = document.getElementById("formMode").value;
       const originalName = document.getElementById("originalName").value;
 
+      const ratingInput = document.getElementById("rating").value;
       const data = {
         recipe_name: document.getElementById("recipe_name").value,
         prep_time: document.getElementById("prep_time").value,
         cook_time: document.getElementById("cook_time").value,
         total_time: document.getElementById("total_time").value,
         servings: document.getElementById("servings").value,
-        rating: parseFloat(document.getElementById("rating").value) || null,
+        rating: ratingInput !== "" ? parseFloat(ratingInput) : null,
         img_src: document.getElementById("img_src").value || null,
         yield: document.getElementById("f_yield").value || null,
         url: document.getElementById("f_url").value || null,
@@ -37,25 +38,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         if (mode === "add") {
-          await fetch("/api/recipes", {
+          const res = await fetch("/api/recipes", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data),
           });
+          if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            throw new Error(errBody.error || `Server error ${res.status}`);
+          }
           showToast("Recipe added successfully!");
         } else {
           const id = document.getElementById("originalName").value;
-          await fetch(`/api/recipes/id/${encodeURIComponent(id)}`, {
+          if (!id) throw new Error("Recipe ID not found. Cannot update.");
+          const res = await fetch(`/api/recipes/id/${encodeURIComponent(id)}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data),
           });
+          if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            throw new Error(errBody.error || `Server error ${res.status}`);
+          }
           showToast("Recipe updated successfully!");
         }
         closeModal();
         fetchRecipes();
       } catch (err) {
-        showToast("Something went wrong!", true);
+        showToast(err.message || "Something went wrong!", true);
       }
     });
 });
