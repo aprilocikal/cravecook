@@ -158,7 +158,7 @@ function renderCards(recipes) {
       const rating = r.ratings?.ratingScore;
       const img =
         r.img_src ||
-        `https://via.placeholder.com/400x225/1f2937/4b5563?text=${encodeURIComponent(r.recipeName || "Recipe")}`;
+        `https://placehold.co/400x225/1f2937/4b5563?text=${encodeURIComponent(r.recipeName || "Recipe")}`;
 
       const ratingHtml = rating
         ? `<div class="card-rating"><i class="ri-star-fill"></i>${rating}</div>`
@@ -171,7 +171,7 @@ function renderCards(recipes) {
         <div class="recipe-card" onclick="openDetail(${i})" style="animation-delay:${Math.min(i * 30, 300)}ms">
             <div class="card-img-wrap">
                 <img src="${img}" alt="${r.recipe_name || ""}" loading="lazy"
-                     onerror="this.src='https://via.placeholder.com/400x225/1f2937/4b5563?text=No+Image'">
+                     onerror="this.onerror=null; this.src='https://placehold.co/400x225/1f2937/4b5563?text=No+Image'">
                 ${ratingHtml}
                 ${cuisineHtml}
             </div>
@@ -204,7 +204,7 @@ function openDetail(idx) {
   const price = generatePrice(r);
   const img =
     r.img_src ||
-    `https://via.placeholder.com/600x340/1f2937/4b5563?text=${encodeURIComponent(r.recipe_name || "Recipe")}`;
+    `https://placehold.co/600x340/1f2937/4b5563?text=${encodeURIComponent(r.recipe_name || "Recipe")}`;
 
   document.getElementById("detailImg").src = img;
   document.getElementById("detailName").innerText =

@@ -42,7 +42,16 @@ app.get("/api/recipes/top50", async (req, res) => {
           as: 'times'
         }
       },
+      {
+        $lookup: {
+          from: 'RecipeRatings',
+          localField: '_id',
+          foreignField: 'recipeId',
+          as: 'ratings'
+        }
+      },
       { $unwind: { path: '$times', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$ratings', preserveNullAndEmptyArrays: true } },
       { $sort: { "times.totalTime": 1 } },
       { $limit: 50 }
     ]).toArray();
@@ -77,7 +86,16 @@ app.get("/api/recipes/search", async (req, res) => {
           as: 'times'
         }
       },
+      {
+        $lookup: {
+          from: 'RecipeRatings',
+          localField: '_id',
+          foreignField: 'recipeId',
+          as: 'ratings'
+        }
+      },
       { $unwind: { path: '$times', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$ratings', preserveNullAndEmptyArrays: true } },
       { $sort: { "times.totalTime": 1 } },
       { $limit: 50 }
     ]).toArray();

@@ -42,11 +42,29 @@ app.get('/api/recipes', async (req, res) => {
 // Get top 50 recipes for user menu
 app.get('/api/recipes/top50', async (req, res) => {
   try {
-    const col = db.getCollection('recipes');
-    const recipes = await col.find({ img_src: { $ne: null, $exists: true } })
-      .sort({ total_minutes: 1 })
-      .limit(50)
-      .toArray();
+    const recipes = await db.getCollection("Recipes").aggregate([
+      { $match: { img_src: { $ne: null, $exists: true } } },
+      {
+        $lookup: {
+          from: 'RecipeTimes',
+          localField: '_id',
+          foreignField: 'recipeId',
+          as: 'times'
+        }
+      },
+      {
+        $lookup: {
+          from: 'RecipeRatings',
+          localField: '_id',
+          foreignField: 'recipeId',
+          as: 'ratings'
+        }
+      },
+      { $unwind: { path: '$times', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$ratings', preserveNullAndEmptyArrays: true } },
+      { $sort: { "times.totalTime": 1 } },
+      { $limit: 50 }
+    ]).toArray();
     res.json(recipes);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -57,10 +75,33 @@ app.get('/api/recipes/top50', async (req, res) => {
 app.get('/api/recipes/search', async (req, res) => {
   try {
     const q = req.query.q || '';
-    const col = db.getCollection('recipes');
-    const recipes = await col.find({
-      recipe_name: { $regex: q, $options: 'i' }
-    }).sort({ total_minutes: 1 }).limit(50).toArray();
+    const recipes = await db.getCollection("Recipes").aggregate([
+      {
+        $match: {
+          recipeName: { $regex: q, $options: "i" },
+        }
+      },
+      {
+        $lookup: {
+          from: 'RecipeTimes',
+          localField: '_id',
+          foreignField: 'recipeId',
+          as: 'times'
+        }
+      },
+      {
+        $lookup: {
+          from: 'RecipeRatings',
+          localField: '_id',
+          foreignField: 'recipeId',
+          as: 'ratings'
+        }
+      },
+      { $unwind: { path: '$times', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$ratings', preserveNullAndEmptyArrays: true } },
+      { $sort: { "times.totalTime": 1 } },
+      { $limit: 50 }
+    ]).toArray();
     res.json(recipes);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -70,11 +111,8 @@ app.get('/api/recipes/search', async (req, res) => {
 // Get single recipe by _id
 app.get("/api/recipes/id/:id", async (req, res) => {
   try {
-    const { ObjectId } = require("mongodb");
     const { id } = req.params;
-    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "Invalid ID format" });
-    const col = db.getCollection("recipes");
-    const recipe = await col.findOne({ _id: new ObjectId(id) });
+    const recipe = await rm.findOne(id);
     if (!recipe) return res.status(404).json({ error: "Recipe not found" });
     res.json(recipe);
   } catch (error) {
@@ -82,21 +120,15 @@ app.get("/api/recipes/id/:id", async (req, res) => {
   }
 });
 
-// Update recipe by _id (fixed logic)
+// Update recipe by _id
 app.put("/api/recipes/id/:id", async (req, res) => {
   try {
-    const { ObjectId } = require("mongodb");
     const { id } = req.params;
-    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "Invalid ID format" });
-    
-    const col = db.getCollection("recipes");
-    const { _id, ...updateData } = req.body;
-    const result = await col.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updateData }
-    );
-    if (result.matchedCount === 0)
-      return res.status(404).json({ error: "Recipe not found" });
+    const { ObjectId } = require("mongodb");
+    if (!ObjectId.isValid(id)) return res.status(400).json({ error: "Invalid ID" });
+
+    const updateData = req.body;
+    await rm.updateOne(id, updateData);
     res.json({ message: "Recipe updated successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -106,48 +138,107 @@ app.put("/api/recipes/id/:id", async (req, res) => {
 // Analytics endpoint
 app.get('/api/analytics', async (req, res) => {
   try {
-    const col = db.getCollection('recipes');
+    const recipesCol = db.getCollection("Recipes");
+    const ratingsCol = db.getCollection("RecipeRatings");
 
-    // Total
-    const total = await col.countDocuments();
+    const total = await recipesCol.countDocuments();
 
     // Rating distribution
-    const ratingDist = await col.aggregate([
-      { $match: { rating: { $ne: null } } },
-      { $bucket: { groupBy: '$rating', boundaries: [1,2,3,4,4.5,5,5.1], default: 'Other',
-          output: { count: { $sum: 1 } } } }
-    ]).toArray();
+    const ratingDist = await ratingsCol
+      .aggregate([
+        { $match: { ratingScore: { $ne: null } } },
+        {
+          $bucket: {
+            groupBy: "$ratingScore",
+            boundaries: [1, 2, 3, 4, 4.5, 5, 5.1],
+            default: "Other",
+            output: { count: { $sum: 1 } },
+          },
+        },
+      ])
+      .toArray();
 
     // Top 10 cuisines
-    const cuisines = await col.aggregate([
-      { $match: { cuisine_path: { $ne: null } } },
-      { $project: { cat: { $arrayElemAt: [{ $split: ['$cuisine_path', '/'] }, 1] } } },
-      { $match: { cat: { $ne: '' } } },
-      { $group: { _id: '$cat', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]).toArray();
+    const cuisines = await recipesCol
+      .aggregate([
+        { $match: { cuisine_path: { $ne: null } } },
+        {
+          $project: {
+            cat: { $arrayElemAt: [{ $split: ["$cuisine_path", "/"] }, 1] },
+          },
+        },
+        { $match: { cat: { $ne: "" } } },
+        { $group: { _id: "$cat", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+      ])
+      .toArray();
 
     // Avg rating
-    const avgResult = await col.aggregate([
-      { $match: { rating: { $ne: null } } },
-      { $group: { _id: null, avg: { $avg: '$rating' }, max: { $max: '$rating' }, min: { $min: '$rating' } } }
-    ]).toArray();
+    const avgResult = await ratingsCol
+      .aggregate([
+        { $match: { ratingScore: { $ne: null } } },
+        {
+          $group: {
+            _id: null,
+            avg: { $avg: "$ratingScore" },
+            max: { $max: "$ratingScore" },
+            min: { $min: "$ratingScore" },
+          },
+        },
+      ])
+      .toArray();
 
     // Servings distribution
-    const servings = await col.aggregate([
-      { $match: { servings: { $ne: null } } },
-      { $project: { s: { $toInt: '$servings' } } },
-      { $match: { s: { $gt: 0 } } },
-      { $bucket: { groupBy: '$s', boundaries: [1,5,10,20,50,100], default: '100+',
-          output: { count: { $sum: 1 } } } }
-    ]).toArray();
+    const servings = await recipesCol
+      .aggregate([
+        { $match: { servings: { $ne: null } } },
+        { $project: { s: { $toInt: "$servings" } } },
+        { $match: { s: { $gt: 0 } } },
+        {
+          $bucket: {
+            groupBy: "$s",
+            boundaries: [1, 5, 10, 20, 50, 100],
+            default: "100+",
+            output: { count: { $sum: 1 } },
+          },
+        },
+      ])
+      .toArray();
 
     // Top 5 highest rated
-    const topRated = await col.find({ rating: { $gte: 4.9 } })
-      .sort({ rating: -1 }).limit(5).project({ recipe_name: 1, rating: 1, cuisine_path: 1 }).toArray();
+    const topRated = await ratingsCol
+      .aggregate([
+        { $match: { ratingScore: { $gte: 4.9 } } },
+        { $sort: { ratingScore: -1 } },
+        { $limit: 5 },
+        {
+          $lookup: {
+            from: 'Recipes',
+            localField: 'recipeId',
+            foreignField: '_id',
+            as: 'recipe'
+          }
+        },
+        { $unwind: '$recipe' },
+        {
+          $project: {
+            recipeName: '$recipe.recipeName',
+            ratingScore: 1,
+            cuisine_path: '$recipe.cuisine_path'
+          }
+        }
+      ])
+      .toArray();
 
-    res.json({ total, ratingDist, cuisines, avgResult: avgResult[0] || {}, servings, topRated });
+    res.json({
+      total,
+      ratingDist,
+      cuisines,
+      avgResult: avgResult[0] || {},
+      servings,
+      topRated,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -165,11 +256,11 @@ app.post('/api/recipes', async (req, res) => {
 });
 
 // Update a recipe
-app.put('/api/recipes/:name', async (req, res) => {
+app.put('/api/recipes/:id', async (req, res) => {
   try {
-    const { name } = req.params;
+    const { id } = req.params;
     const updateData = req.body;
-    await rm.updateOne(name, updateData);
+    await rm.updateOne(id, updateData);
     res.json({ message: 'Recipe updated successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -177,10 +268,10 @@ app.put('/api/recipes/:name', async (req, res) => {
 });
 
 // Delete a recipe
-app.delete('/api/recipes/:name', async (req, res) => {
+app.delete('/api/recipes/:id', async (req, res) => {
   try {
-    const { name } = req.params;
-    await rm.deleteOne(name);
+    const { id } = req.params;
+    await rm.deleteOne(id);
     res.json({ message: 'Recipe deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
