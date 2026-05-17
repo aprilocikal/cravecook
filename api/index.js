@@ -278,4 +278,26 @@ app.delete('/api/recipes/:id', async (req, res) => {
   }
 });
 
+// Temporary endpoint to seed products from browser (Vercel)
+app.get('/api/seed-products', async (req, res) => {
+  try {
+    const ProductModel = require('../src/ProductModel');
+    const pm = new ProductModel(db);
+    
+    const products = [
+      { name: 'Nasi Goreng Spesial', price: 35000 },
+      { name: 'Mie Ayam Jamur', price: 25000 },
+      { name: 'Es Teh Manis', price: 5000 }
+    ];
+
+    for (const p of products) {
+      await pm.insertOne(p.name, p.price);
+    }
+    
+    res.json({ message: '3 Products seeded successfully to MongoDB!' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = app;
